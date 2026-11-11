@@ -9,12 +9,19 @@
     </section>
     <?php endif; ?>
 
+    <?php if (!$this->have()): ?>
+    <div class="empty-state reveal">
+        <div class="empty-emoji" aria-hidden="true">✦</div>
+        <p><?php _e('这里还一片空白，去后台写第一篇文章吧。'); ?></p>
+    </div>
+    <?php endif; ?>
+
     <?php while ($this->next()): ?>
     <?php $cover = nebulaCover($this); ?>
     <article class="post-card<?php if ($cover): ?> has-thumb<?php endif; ?> reveal" itemscope itemtype="http://schema.org/BlogPosting">
         <?php if ($cover): ?>
         <a class="pc-thumb" href="<?php $this->permalink(); ?>" aria-label="<?php $this->title(); ?>">
-            <img src="<?php echo $cover; ?>" alt="<?php $this->title(); ?>" loading="lazy">
+            <img src="<?php echo $cover; ?>" alt="<?php $this->title(); ?>" loading="lazy" decoding="async">
         </a>
         <div class="pc-body">
         <?php endif; ?>
@@ -22,6 +29,7 @@
             <span class="m-author"><?php $this->author(); ?></span>
             <span class="m-date"><?php $this->date('Y-m-d'); ?></span>
             <span class="m-cat"><?php $this->category(','); ?></span>
+            <span class="m-read"><?php echo nebulaReadingTime($this); ?><?php _e(' 分钟'); ?></span>
         </div>
         <h2 itemprop="name headline"><a itemprop="url" href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
         <div class="pc-excerpt" itemprop="articleBody"><?php echo nebulaSummary($this); ?></div>
@@ -35,7 +43,7 @@
     </article>
     <?php endwhile; ?>
 
-    <?php $this->pageNav('&laquo;', '&raquo;', 3, '…', array('wrapTag' => 'div', 'wrapClass' => 'page-nav')); ?>
+    <?php nebulaPager($this); ?>
 </div><!-- end .content -->
 
 <?php $this->need('sidebar.php'); ?>

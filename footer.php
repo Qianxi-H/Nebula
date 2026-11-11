@@ -32,16 +32,22 @@
     </footer>
 
     <script>
-        // 是否开启粒子（配色由 data-scheme 控制，见 header 预绘制脚本与 style.css）
+        // 主题运行时配置（配色由 data-scheme 控制，见 header 预绘制脚本与 style.css）
         window.NEBULA_PARTICLES = <?php echo (Helper::options()->enableParticles == '0') ? 'false' : 'true'; ?>;
+        window.NEBULA = {
+            codeCopy: <?php echo (Helper::options()->enableCodeCopy == '0') ? 'false' : 'true'; ?>,
+            copyText: <?php echo json_encode(_t('复制')); ?>,
+            copiedText: <?php echo json_encode(_t('已复制')); ?>
+        };
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- defer：不阻塞首屏解析，且保证执行顺序（core → 语言包 → 主题脚本） -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <!-- 额外语言包：MATLAB / Verilog / SystemVerilog / Perl（需在 core 之后、nebula.js 之前，确保注册成功） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/matlab.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/verilog.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/systemverilog.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/perl.min.js"></script>
-    <script src="<?php $this->options->themeUrl('js/nebula.js'); ?>?v=3"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/matlab.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/verilog.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/systemverilog.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/perl.min.js"></script>
+    <script defer src="<?php echo nebulaAsset('js/nebula.js'); ?>"></script>
     <?php $this->footer(); ?>
 </body>
 </html>

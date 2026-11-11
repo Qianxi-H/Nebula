@@ -6,7 +6,7 @@
             <?php if ($this->options->profileAvatar): ?>
                 <img src="<?php $this->options->profileAvatar(); ?>" alt="<?php echo htmlspecialchars($this->options->profileName ?: $this->options->title); ?>">
             <?php else: ?>
-                <?php nebulaAvatar('', $this->options->profileName ?: $this->options->title, 84); ?>
+                <?php nebulaAvatar($this->options->profileEmail, $this->options->profileName ?: $this->options->title, 84); ?>
             <?php endif; ?>
         </div>
         <h3 class="profile-name"><?php echo htmlspecialchars($this->options->profileName ?: $this->options->title); ?></h3>

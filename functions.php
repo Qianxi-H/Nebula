@@ -2,22 +2,44 @@
 /**
  * Nebula —— 现代化炫酷 Typecho 主题
  *
- * 特性：动态极光背景 / 粒子星空 / 玻璃拟态 / 渐变发光 /
- *      滚动渐显 / 阅读进度条 / 明暗主题切换 / 鼠标光晕
+ * 特性：动态极光背景 / 粒子星空 / 玻璃拟态 / 渐变发光 / 6 套配色 /
+ *      滚动渐显 / 阅读进度 / 明暗主题 / 目录 / 全文搜索 / 代码增强
  *
  * @package Nebula
  * @author WorkBuddy
- * @version 1.0.0
+ * @version 1.1.0
  * @link https://www.workbuddy.cn
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
+
+/** 主题版本号（静态资源版本号优先取文件修改时间，取不到时用它兜底） */
+if (!defined('NEBULA_VERSION')) {
+    define('NEBULA_VERSION', '1.1.0');
+}
+
+/**
+ * 在设置面板插入分组标题
+ */
+function nebulaConfigSection($form, $title, $desc = '')
+{
+    $sec = new Typecho_Widget_Helper_Layout('div', array(
+        'style' => 'margin:30px 0 6px;padding-top:18px;border-top:1px solid rgba(128,138,168,.28);'
+    ));
+    $sec->html(
+        '<p style="margin:0;font-weight:700;font-size:14px;letter-spacing:.5px;">' . htmlspecialchars($title) . '</p>'
+        . ($desc === '' ? '' : '<p style="margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a90a6;">' . htmlspecialchars($desc) . '</p>')
+    );
+    $form->addItem($sec);
+}
 
 /**
  * 主题设置面板（控制台 -> 外观 -> 设置）
  */
 function themeConfig($form)
 {
+    nebulaConfigSection($form, '基础外观', '决定访客首次打开站点时的观感；访客之后可在前台自由切换并记忆。');
+
     $enableParticles = new Typecho_Widget_Helper_Form_Element_Radio(
         'enableParticles',
         array('1' => _t('开启'), '0' => _t('关闭')),
@@ -52,6 +74,8 @@ function themeConfig($form)
     );
     $form->addInput($defaultTheme);
 
+    nebulaConfigSection($form, '侧边栏', '每个组件独立选择显示在左栏、右栏或隐藏；个人简介卡片固定显示在左栏顶部。');
+
     /* ---------- 侧边栏组件（每个组件选择：左栏 / 右栏 / 不显示） ----------
      * 注意：不要用 Checkbox（数组型）——Typecho 的 Form::getParams() 在字段首次
      * 未保存（值为 null）时会把数组中转成 null 默认值，导致勾选无法持久化。
@@ -83,13 +107,15 @@ function themeConfig($form)
         $form->addInput($el);
     }
 
+    nebulaConfigSection($form, '个人简介', '显示在左侧栏顶部的名片，留空的项会自动回落到站点标题 / 站点描述。');
+
     /* ---------- 个人简介栏（左侧栏展示） ---------- */
     $profileName = new Typecho_Widget_Helper_Form_Element_Text(
         'profileName',
         NULL,
         '',
-        _t('站长昵称（个人简介栏）'),
-        _t('显示在左侧个人简介栏，留空则默认使用站点标题。')
+        _t('站长昵称'),
+        _t('留空则使用站点标题。')
     );
     $form->addInput($profileName);
 
@@ -111,14 +137,45 @@ function themeConfig($form)
     );
     $form->addInput($profileAvatar);
 
+    $profileEmail = new Typecho_Widget_Helper_Form_Element_Text(
+        'profileEmail',
+        NULL,
+        '',
+        _t('站长邮箱（用于头像识别）'),
+        _t('填写 QQ 邮箱（如 123456@qq.com）时，评论区的「博主」会显示对应 QQ 头像；留空则使用主题渐变头像。')
+    );
+    $form->addInput($profileEmail);
+
     $profileLinks = new Typecho_Widget_Helper_Form_Element_Textarea(
         'profileLinks',
         NULL,
         '',
         _t('社交链接（每行一个）'),
-        _t('格式：名称|链接，例如：GitHub|https://github.com/xxx 。留空则不显示。')
+        _t('格式：名称|链接，例如 GitHub|https://github.com/xxx 。留空则不显示。')
     );
     $form->addInput($profileLinks);
+
+    nebulaConfigSection($form, '文章页', '控制阅读页上的辅助功能，可按需关闭。');
+
+    $enableToc = new Typecho_Widget_Helper_Form_Element_Radio(
+        'enableToc',
+        array('1' => _t('开启'), '0' => _t('关闭')),
+        '1',
+        _t('文章目录（TOC）'),
+        _t('自动提取正文中的二、三级标题生成目录；标题少于两个时自动隐藏。')
+    );
+    $form->addInput($enableToc);
+
+    $enableCodeCopy = new Typecho_Widget_Helper_Form_Element_Radio(
+        'enableCodeCopy',
+        array('1' => _t('开启'), '0' => _t('关闭')),
+        '1',
+        _t('代码块复制按钮'),
+        _t('在代码块右上角显示语言标签与「复制」按钮。')
+    );
+    $form->addInput($enableCodeCopy);
+
+    nebulaConfigSection($form, '页脚', '备案号会链接到工信部备案系统，留空则不显示。');
 
     /* ---------- 页脚备案号 ---------- */
     $icpNumber = new Typecho_Widget_Helper_Form_Element_Text(
@@ -150,19 +207,49 @@ function themeFields($layout)
         NULL,
         NULL,
         _t('自定义摘要'),
-        _t('留空则自动截取正文前 120 字作为列表摘要。')
+        _t('留空则自动使用正文中 &lt;!--more--&gt; 之前的内容；未加该标记时截取正文前 160 字。')
     );
     $layout->addItem($excerpt);
 }
 
 /**
- * 取出文章封面：优先自定义字段，其次正文首图
+ * 带自动版本号的静态资源地址。
+ * 用文件修改时间做版本号，改动样式/脚本后浏览器立即拉取新版，无需再手工升 v=。
+ */
+function nebulaAsset($file)
+{
+    $file = ltrim((string) $file, '/');
+    $base = rtrim((string) Helper::options()->themeUrl, '/');
+    $path = __TYPECHO_ROOT_DIR__ . __TYPECHO_THEME_DIR__ . '/' . Helper::options()->theme . '/' . $file;
+    $ver  = @filemtime($path);
+    return $base . '/' . $file . '?v=' . ($ver ? $ver : NEBULA_VERSION);
+}
+
+/**
+ * 取出文章封面：优先自定义字段，其次正文首图（同时兼容 HTML 与 Markdown 写法）
  */
 function nebulaCover($obj)
 {
     if (!empty($obj->fields->cover)) return $obj->fields->cover;
-    if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $obj->text, $m)) return $m[1];
+
+    $text = (string) $obj->text;
+    if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $text, $m)) return $m[1];
+    // Markdown: ![alt](url) —— 排除外链式 [id]: url 的写法，只取内联图片
+    if (preg_match('/!\[[^\]]*\]\(\s*([^\s\)]+)(?:\s+["\'][^"\']*["\'])?\s*\)/', $text, $m)) return $m[1];
     return '';
+}
+
+/**
+ * 正文纯文本：去脚本/样式块、块级标签转空格、去标签、还原实体、压缩空白
+ */
+function nebulaPlainText($html)
+{
+    $html = (string) $html;
+    $html = preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $html);
+    $html = preg_replace('#</?(p|div|li|ul|ol|h[1-6]|blockquote|pre|tr|td|th|br|hr)\b[^>]*>#i', ' ', $html);
+    $raw  = strip_tags($html);
+    $raw  = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return trim(preg_replace('/\s+/u', ' ', $raw));
 }
 
 /**
@@ -180,14 +267,9 @@ function nebulaSummary($obj, $len = 160)
     // excerpt 为空（纯图片/纯标签等）时退回正文，避免卡片空白
     if (trim(strip_tags($html)) === '') $html = (string) $obj->text;
 
-    // 块级标签转空格，避免段落文字粘连；再去掉脚本样式与全部标签
-    $html = preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $html);
-    $html = preg_replace('#</?(p|div|li|ul|ol|h[1-6]|blockquote|pre|tr|td|th|br|hr)\b[^>]*>#i', ' ', $html);
-    $raw  = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $html)));
-    $raw  = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $raw  = trim(preg_replace('/\s+/u', ' ', $raw));
-
-    if ($raw === '') $raw = trim((string) $obj->title);
+    $raw = nebulaPlainText($html);
+    // 标题在 Typecho 内部已转义过，这里先还原，后面统一再转义，避免出现 &amp;amp;
+    if ($raw === '') $raw = html_entity_decode((string) $obj->title, ENT_QUOTES, 'UTF-8');
 
     // 统一转义，避免摘要中的 < > & 被当作 HTML
     $raw = htmlspecialchars($raw, ENT_QUOTES, 'UTF-8');
@@ -328,12 +410,111 @@ function nebulaAvatar($email, $name, $size = 40)
 }
 
 /**
- * 估算阅读时长（分钟），中文按约 350 字/分钟，英文单词另计
+ * 正文统计：返回 array(字数, 阅读分钟)
+ * 中文按 350 字/分钟、英文按 220 词/分钟折算；代码块与图片不计入。
+ */
+function nebulaTextStat($obj)
+{
+    $text = (string) $obj->text;
+    $text = preg_replace('/```.*?```/s', ' ', $text);          // 围栏代码块
+    $text = preg_replace('/`[^`]*`/', ' ', $text);              // 行内代码
+    $text = preg_replace('/!\[[^\]]*\]\([^\)]*\)/', ' ', $text); // Markdown 图片
+    $text = preg_replace('/\[([^\]]*)\]\([^\)]*\)/', '$1', $text); // 链接保留文字
+    $text = nebulaPlainText($text);
+
+    preg_match_all('/[\x{4e00}-\x{9fa5}]/u', $text, $cjk);
+    preg_match_all('/[A-Za-z0-9][A-Za-z0-9\'\-]*/', $text, $en);
+
+    $cjkCount = count($cjk[0]);
+    $enCount  = count($en[0]);
+    $minutes  = max(1, (int) ceil($cjkCount / 350 + $enCount / 220));
+
+    return array($cjkCount + $enCount, $minutes);
+}
+
+/**
+ * 估算阅读时长（分钟）
  */
 function nebulaReadingTime($obj)
 {
-    $text = preg_replace('/<[^>]+>/', '', $obj->text);
-    $text = preg_replace('/\s+/', '', $text);
-    $len = mb_strlen($text, 'UTF-8');
-    return max(1, ceil($len / 350));
+    $stat = nebulaTextStat($obj);
+    return $stat[1];
+}
+
+/**
+ * 正文字数（中文字符 + 英文单词）
+ */
+function nebulaWordCount($obj)
+{
+    $stat = nebulaTextStat($obj);
+    return $stat[0];
+}
+
+/**
+ * 最后更新时间：仅在确实更新过（与发布时间相差超过一天）时返回，避免发布当天重复显示
+ */
+function nebulaModified($obj)
+{
+    $modified = (int) $obj->modified;
+    $created  = (int) $obj->created;
+    if ($modified <= $created || ($modified - $created) < 86400) return '';
+
+    $date = new \Typecho\Date($modified);
+    return $date->format('Y-m-d');
+}
+
+/**
+ * 统一的分页输出：包一层 nav + ul，保证 HTML 合法（Typecho 默认输出 li 直接挂在 div 下）
+ * 只有真的存在多页时才输出，避免空容器。
+ */
+function nebulaPager($ctx, $split = 3)
+{
+    ob_start();
+    $ctx->pageNav('&laquo;', '&raquo;', (int) $split, '…', array(
+        'wrapTag'   => 'ul',
+        'wrapClass' => 'page-nav',
+        'itemTag'   => 'li',
+    ));
+    $out = trim((string) ob_get_clean());
+
+    if ($out !== '') {
+        echo '<nav class="pager" aria-label="分页导航">' . $out . '</nav>';
+    }
+}
+
+/**
+ * 搜索结果关键词高亮：只处理文本，不破坏标签与 HTML 实体
+ */
+function nebulaHighlight($html, $kw)
+{
+    $html = (string) $html;
+    $kw   = trim(strip_tags((string) $kw));
+
+    // 关键词过短/过长或含尖括号时不做高亮，避免破坏结构
+    if ($kw === '' || mb_strlen($kw, 'UTF-8') > 40 || strpbrk($kw, '<>') !== false) return $html;
+
+    // 先把 HTML 实体换成占位符，防止关键词命中 &amp; 这类序列内部
+    $store = array();
+    $html = preg_replace_callback('/&[#a-zA-Z0-9]+;/', function ($m) use (&$store) {
+        $key = "\x01" . count($store) . "\x02";
+        $store[$key] = $m[0];
+        return $key;
+    }, $html);
+
+    $replaced = preg_replace('/(' . preg_quote($kw, '/') . ')/iu', '<mark class="kw">$1</mark>', $html);
+    // 关键词编码异常时 preg_replace 会返回 null，此时原样返回，避免输出空白
+    if ($replaced === null) return $html;
+
+    return $store ? strtr($replaced, $store) : $replaced;
+}
+
+/**
+ * 输出带高亮的标题（搜索结果页使用）
+ */
+function nebulaTitleHighlighted($obj, $kw)
+{
+    ob_start();
+    $obj->title();
+    $title = (string) ob_get_clean();
+    echo nebulaHighlight($title, $kw);
 }
